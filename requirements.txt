@@ -1,0 +1,4 @@
+pillow~=6.2.1
+selenium~=2.53.6
+
+git+https://github.com/efpato/page-object.git
