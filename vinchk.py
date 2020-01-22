@@ -43,11 +43,9 @@ def fullpage_screenshot(driver, filename):
         y += viewport_height
 
     image = Image.new('RGB', (total_width, total_height))
-    previous = None
     for rectangle in rectangles:
-        if previous is not None:
-            driver.execute_script("window.scrollTo({0}, {1})".format(rectangle[0], rectangle[1]))
-            sleep(0.2)
+        driver.execute_script("window.scrollTo({0}, {1})".format(rectangle[0], rectangle[1]))
+        sleep(0.2)
 
         screenshot = Image.open(BytesIO(driver.get_screenshot_as_png()))
 
@@ -57,7 +55,6 @@ def fullpage_screenshot(driver, filename):
             offset = (rectangle[0], rectangle[1])
 
         image.paste(screenshot, offset)
-        previous = rectangle
 
     image.save(filename)
 
@@ -75,6 +72,11 @@ class Page(PageObject):
     def dtp_count(self):
         results = self.webdriver.find_elements_by_css_selector(
             "div#checkAutoAiusdtp > div.checkResult > ul.aiusdtp-list > li")
+        return len(results)
+
+    def wanted_count(self):
+        results = self.webdriver.find_elements_by_css_selector(
+            "div#checkAutoWanted > div.checkResult > ul.wanted-list > li")
         return len(results)
 
     def restricted_count(self):
@@ -117,6 +119,7 @@ def main(vin):
     options = ChromeOptions()
     # options.add_argument('headless')
     options.add_argument('--start-maximized')
+    # options.add_argument('--proxy-server=https://fr-75-4-200.friproxy.biz:443')
 
     try:
         driver = Chrome(chrome_options=options)
@@ -128,19 +131,25 @@ def main(vin):
 
         logging.debug('Opening "%s"', Page.URL)
         driver.get(Page.URL)
-        sleep(3)
 
         page = Page(driver)
         page.vin = vin
+        sleep(1)
 
         page.dtp.click()
         page.wait_for_dtp()
+
+        page.wanted.click()
+        page.wait_for_wanted()
 
         page.restricted.click()
         page.wait_for_restricted()
 
         if page.dtp_count() >= 3:
             filename = f'3ДТП_{filename}'
+
+        if page.wanted_count() > 0:
+            filename = f'розыск_{filename}'
 
         if page.restricted_count() > 0:
             filename = f'ограничения_{filename}'
